@@ -34,4 +34,38 @@
   Critical example: "peng" (Singlish for iced) appears nowhere in the
   source data but is how people actually type.
 
-There were zero duplicate IDs across 1,163 rows, and that you kept the draft alongside the final
+- **Aliases are pipe-separated**, not comma-separated. Dish names in the
+  source contain commas ("Economic rice (1 vegetable, 2 meats)"), so a
+  comma delimiter would split names in half.
+- **A typed substring outranks fuzzy distance.** "kopi peng" should return
+  Iced Kopi first regardless of what edit distance thinks is closest.
+  `search()` floors substring matches at 95 for this reason.
+
+## Server
+- **Lookup logic lives in `src/data.py`, not in the server.** `search()`,
+  `lookup()` and `categories()` are plain functions with no MCP dependency.
+  The MCP server wraps them for stdio clients; the estimator imports them
+  directly, because the Anthropic SDK's tool runner takes Python functions
+  and the Messages API's MCP connector needs a URL server, not a stdio one.
+  One implementation, two callers, no divergence.
+- **No `print()` anywhere reachable from the server.** Stdout carries the
+  JSON-RPC frames and printing to it corrupts them. The failure looks like
+  the client silently failing to connect, with no useful error. Logging
+  goes to stderr.
+- **Tool return types are `list[dict]` / `dict[str, Any]`, never bare `dict`.**
+  A bare `dict` produces no output schema, so the SDK falls back to
+  unstructured text for that one tool.
+- **Unknown ids raise `ToolError` with a next step** ("call search_dishes"),
+  rather than returning null. A model reads the error and recovers; a null
+  it has to interpret.
+- **Testing uses the Inspector via npx, not `mcp dev`.** `mcp dev` wraps the
+  server in `uv run --with mcp`, a fresh environment that lacks the
+  project's other dependencies.
+- **The smoke test uses the SDK's own stdio client, not pytest.** It spawns
+  the server exactly as a client would, which is the only way to catch a
+  stray print() corrupting the protocol.
+
+## Integrity
+- **Zero duplicate IDs across all 1,163 rows**, checked after normalisation.
+- **`data/dishes_draft.csv` is kept alongside the final file** so the
+  normalisation can be diffed rather than taken on trust.

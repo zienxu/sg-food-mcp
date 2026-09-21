@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "sg-food": {
+      "command": ".venv/bin/python",
+      "args": ["src/server.py"]
+    }
+  }
+}
