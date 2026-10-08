@@ -59,6 +59,9 @@ The full log, including the decisions that were reversed, is in
 
 ## What works today
 
+![Claude answering "how many calories in kopi peng?" by calling search_dishes
+and reporting 240 kcal for a 400ml cup of Iced Kopi](docs/images/claude-kopi.png)
+
 - **1,163 dishes and drinks** from HPB, normalised into one table, with
   per-serving calories, protein, carbs and fat.
 - **Search that matches how people actually type.** "kopi peng" and "cai fan"
@@ -80,6 +83,11 @@ The full log, including the decisions that were reversed, is in
    measured rather than demoed on the pictures that happen to work.
 3. A question instead of a guess when the portion is unclear.
 
+Known limitation, visible in the screenshot above: searching "kopi peng" also
+returns "Ham chim peng with red bean", because the name contains "peng". The
+real matches still rank above it, so this is noise rather than a wrong answer,
+but the fuzzy matching needs tightening before the estimator depends on it.
+
 ## Run it
 
 Needs Python 3.12.
@@ -97,6 +105,9 @@ the tools directly in a browser:
 ```bash
 npx @modelcontextprotocol/inspector .venv/bin/python src/server.py
 ```
+
+![The MCP Inspector showing the three tools, their descriptions, the read-only
+annotation and the output schema](docs/images/inspector.png)
 
 ## Data and licence
 
