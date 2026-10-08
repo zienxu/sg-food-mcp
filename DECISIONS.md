@@ -64,6 +64,11 @@
 - **The smoke test uses the SDK's own stdio client, not pytest.** It spawns
   the server exactly as a client would, which is the only way to catch a
   stray print() corrupting the protocol.
+- **Tool parameters are named after the fields they come from.** `lookup_dish`
+  first took `dish_id` while `search_dishes` returned `id`; the model copied
+  the field name it had just been handed and the call failed validation, then
+  retried. A model chains tools by matching names, so a mismatch costs a
+  round trip and shows the user an error.
 
 ## Integrity
 - **Zero duplicate IDs across all 1,163 rows**, checked after normalisation.

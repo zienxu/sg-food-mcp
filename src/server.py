@@ -52,8 +52,8 @@ def search_dishes(
 
 @server.tool(annotations=READ_ONLY)
 def lookup_dish(
-    dish_id: Annotated[str, Field(description=(
-        "The id of a dish, exactly as returned by search_dishes, "
+    id: Annotated[str, Field(description=(
+        "A dish id, copied from the 'id' field of a search_dishes result, "
         "e.g. 'steamed-chicken-rice'."
     ))],
 ) -> dict[str, Any]:
@@ -66,10 +66,10 @@ def lookup_dish(
     For rows served by the piece, stick or scoop (satay, siew mai, waffles),
     the figures are for ONE unit. Multiply by the number the user ate.
     """
-    row = data.lookup(dish_id)
+    row = data.lookup(id)
     if row is None:
         raise ToolError(
-            f"No dish with id {dish_id!r}. Call search_dishes to find a valid id."
+            f"No dish with id {id!r}. Call search_dishes to find a valid id."
         )
     return row
 

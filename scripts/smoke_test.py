@@ -28,13 +28,13 @@ async def main():
         assert hits[0]["input_mode"] == "tap"
 
         # lookup returns correct kcal and never leaks the per-100 fields
-        r = await client.call_tool("lookup_dish", {"dish_id": "steamed-chicken-rice"})
+        r = await client.call_tool("lookup_dish", {"id": "steamed-chicken-rice"})
         row = r.structured_content
         assert row["kcal_default"] == 488, row
         assert "kcal_per_100" not in row and "per100_unit" not in row
 
         # unknown dish id comes back as an error, not a crash
-        r = await client.call_tool("lookup_dish", {"dish_id": "not-a-dish"})
+        r = await client.call_tool("lookup_dish", {"id": "not-a-dish"})
         assert r.is_error, "unknown id should be an error"
 
         # categories list has the expected count
