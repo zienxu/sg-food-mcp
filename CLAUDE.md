@@ -1,8 +1,9 @@
 # sg-food-mcp
 
-An MCP server exposing Singapore hawker food nutrition (HPB data, CC0), plus a
-photo-to-calories estimator built on top of it. Design rationale lives in
-DECISIONS.md — read it before proposing changes to the data model.
+An MCP server exposing Singapore hawker food nutrition (HPB data, CC0). The
+server and its data layer work; a photo-to-calories estimator on top of them is
+the next piece and does not exist yet. Design rationale lives in DECISIONS.md —
+read it before proposing changes to the data model.
 
 ## Environment
 

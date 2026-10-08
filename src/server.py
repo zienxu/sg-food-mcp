@@ -22,7 +22,14 @@ server = MCPServer(
     ),
 )
 
-READ_ONLY = ToolAnnotations(read_only_hint=True)
+# All four are set explicitly: unset hints fall back to the spec defaults
+# (destructive, non-idempotent, open-world), which a client then displays.
+READ_ONLY = ToolAnnotations(
+    read_only_hint=True,
+    destructive_hint=False,
+    idempotent_hint=True,
+    open_world_hint=False,
+)
 
 
 @server.tool(annotations=READ_ONLY)
