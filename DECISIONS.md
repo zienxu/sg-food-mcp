@@ -74,3 +74,11 @@
 - **Zero duplicate IDs across all 1,163 rows**, checked after normalisation.
 - **`data/dishes_draft.csv` is kept alongside the final file** so the
   normalisation can be diffed rather than taken on trust.
+
+## Vision backend (decided before step 5)
+- Free backends only. Claude's API has no lasting free tier, so the estimator runs on Gemini's free tier (default) and a local Ollama model behind one interface (src/vision.py, chosen by VISION_BACKEND). Running both on the same photos gives a hosted-vs-open-weight comparison at $0.
+- Gemini model: Gemini 3 Flash (exact id in .env). Not gemini-2.5-flash, which was retired on 16 Oct 2026. The id lives in .env because ids change fast.
+- Ollama model: qwen2.5vl:7b.
+- Step 5 imports search() directly instead of calling the MCP server over the protocol. It is the fastest route, and the MCP server stays the public piece.
+- Portion answer to kcal: small / regular / large = x0.75 / x1.0 / x1.4 of the default serving. Assumptions, not measured; step 6 tests them.
+- Confidence threshold: 0.6, set before seeing results. Any later change gets reported as tuned on the same photos.
