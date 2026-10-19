@@ -4,8 +4,9 @@ Look up the calories in Singapore hawker food using the Health Promotion
 Board's own figures, so an AI assistant answers from the official database
 instead of guessing from memory.
 
-**Status: in progress.** The lookup half works today. The photo estimator is
-the next piece. This README says plainly what is and isn't built.
+**Status: built and evaluated.** Lookup, photo estimation, and a small logging
+app all work. There's no live demo link — see [Decisions](#decisions-and-tradeoffs)
+for why.
 
 ## The problem
 
@@ -74,19 +75,77 @@ and reporting 240 kcal for a 400ml cup of Iced Kopi](docs/images/claude-kopi.png
   and it searches the database and answers 240 kcal, citing the serving size.
 - **Per-piece items handled.** Satay is 57 kcal per stick, so ten sticks is
   570. The database figure is per stick, and the assistant is told to multiply.
+- **A photo estimator** (`src/vision.py`, `src/estimate.py`): name the dish
+  from a photo, then take the kcal from the database — never from the vision
+  model. Below a 0.6 confidence threshold it asks a question instead of
+  guessing a number. Drinks skip the camera entirely (see the kopi case
+  above) and go through the same tap list as the app.
+- **A Streamlit logging app** (`app.py`): upload a photo to estimate a meal,
+  tap a favourite drink, see today's running total. Logging is session-only:
+  it isn't saved to a database, so it disappears once the session ends.
+- **An eval harness** (`evals/run.py`) that scores each vision backend
+  against a 23-photo labelled set — see [Results](#results) below.
+
+## Results
+
+Scored on 23 labelled hawker photos, both backends run against the same set
+(`evals/run.py --backend gemini|ollama`, full numbers in
+[evals/results.md](evals/results.md)):
+
+| Backend | Dish correct | Kcal within ±20% | Median latency | Cost/photo | Refusal rate |
+| --- | --- | --- | --- | --- | --- |
+| Gemini | 13.0% (3/23) | 39.1% (9/23) | 1.73s | $0.00 | 0.0% (0/23) |
+| Ollama | 0.0% (0/23) | 21.7% (5/23) | 16.71s | $0.00 | 0.0% (0/23) |
+
+Gemini wins on both speed and accuracy, at the same $0 cost (free tier on
+both sides), so it's the default backend.
+
+Dish-correct is low on both, and it's the data, not the pipeline: several
+eval photos show dishes the 1,163-row HPB set has no entry for. The vision
+model still names something, `search()` still fuzzy-matches it to the
+nearest dish in the database, and that dish's kcal sometimes lands within
+±20% by luck while the name is wrong. Zero refusals across both backends
+confirms the estimator never says "I don't know this dish" — it always
+returns a nearest match or a portion question, never a blank. A bigger or
+user-extensible database would move dish-correct more than any change to
+the vision side. Not fixed here; flagged for whoever picks up data coverage
+next.
+
+## Decisions and tradeoffs
+
+The case above (kopi) and the three decisions below shaped the lookup half.
+Building the estimator and app added a few more with real consequences:
+
+- **No live deploy link.** The spec's own rule: ship a link only once abuse
+  is handled (a per-session call limit or an access code). Neither is built,
+  so this repo ships as code + walkthrough instead of a hosted demo.
+- **A confidence threshold, not a best guess.** Below 0.6, `estimate()`
+  returns a question ("regular or large?") instead of a kcal number. A wrong
+  number that looks exact is worse than an honest question.
+- **Portion multipliers are assumptions, not measurements.** Small/regular/
+  large map to ×0.75/×1.0/×1.4 of the default serving — picked before
+  evaluation, tested by the eval above, not tuned after seeing results.
+- **One `search()`/`lookup()` implementation, two callers.** The MCP server
+  and the estimator both call the same plain functions in `src/data.py`
+  directly — no second copy of the matching logic to drift out of sync.
+- **Free backends only.** Gemini (hosted, free tier) and Ollama (local,
+  open-weight) behind one interface in `src/vision.py`, chosen by
+  `VISION_BACKEND` in `.env`. No paid API, so the eval's $0.00/photo is
+  literal, not rounded.
+
+The full log — including decisions that were reversed — is in
+[DECISIONS.md](DECISIONS.md).
 
 ## What's next
 
-1. A photo estimator: name the dish from a picture, then take the number from
-   the database.
-2. **A 30-photo test set, built before the estimator**, so accuracy gets
-   measured rather than demoed on the pictures that happen to work.
-3. A question instead of a guess when the portion is unclear.
-
-Known limitation, visible in the screenshot above: searching "kopi peng" also
-returns "Ham chim peng with red bean", because the name contains "peng". The
-real matches still rank above it, so this is noise rather than a wrong answer,
-but the fuzzy matching needs tightening before the estimator depends on it.
+1. **A bigger or user-extensible dish database.** The single largest lever
+   on dish-correct accuracy, per the eval above — not a vision-side fix.
+2. **Tighter fuzzy matching.** Visible in the screenshot above: searching
+   "kopi peng" also returns "Ham chim peng with red bean" because the name
+   contains "peng". The real match still ranks first, so it's noise rather
+   than a wrong answer, but it should be tightened.
+3. **Abuse handling**, if a live deploy ever happens — a per-session call
+   limit or an access code, per the spec.
 
 ## Run it
 
@@ -108,6 +167,15 @@ npx @modelcontextprotocol/inspector .venv/bin/python src/server.py
 
 ![The MCP Inspector showing the three tools, their descriptions, the read-only
 annotation and the output schema](docs/images/inspector.png)
+
+To run the photo estimator or the app, add a `.env` with `VISION_BACKEND`
+(`gemini` or `ollama`) and either `GEMINI_API_KEY` + `GEMINI_MODEL`, or
+`OLLAMA_MODEL` for a local model. Then:
+
+```bash
+.venv/bin/streamlit run app.py                              # the logging app
+.venv/bin/python evals/run.py --backend gemini|ollama        # score a backend
+```
 
 ## Data and licence
 
