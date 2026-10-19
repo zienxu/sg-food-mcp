@@ -84,3 +84,11 @@
 - Step 5 imports search() directly instead of calling the MCP server over the protocol. It is the fastest route, and the MCP server stays the public piece.
 - Portion answer to kcal: small / regular / large = x0.75 / x1.0 / x1.4 of the default serving. Assumptions, not measured; step 6 tests them.
 - Confidence threshold: 0.6, set before seeing results. Any later change gets reported as tuned on the same photos.
+
+## Estimator (step 5)
+- **The installed HTTP client is `httpx2`, not `httpx`.** Both the pip package and the import name are `httpx2` in this venv — a fork/successor of httpx with an identical API. `import httpx` fails; `vision.py` does `import httpx2 as httpx`.
+- **Retry is one shared `_retry_post` helper**, stdlib `time.sleep` with exponential backoff (1s/2s/4s, 3 retries), triggered only on HTTP 429 per spec. No `tenacity`/`backoff` dependency added for two call sites.
+- **Both backends are asked for JSON** (Gemini: `responseMimeType`+`responseSchema`; Ollama: `format: "json"`), but `vision._normalize()` still validates and clamps every field and falls back to an empty result on anything malformed — forced-JSON mode is a reliability aid, not a parsing guarantee.
+- **`estimate()` only acts on the top vision candidate.** A non-match or a tap-dish (drink) hit asks a question instead of falling through to candidate #2/#3. Revisit only if step 6's evals show this costs accuracy.
+- **`load_dotenv()` lives in `src/vision.py` only** — the first (and so far only) `.env` consumer in the repo.
+- **Gemini's API key goes in an `x-goog-api-key` header, not a `?key=` query param.** `httpx2` logs the full request URL at INFO; a query param would put the key in stderr on every call. Caught by a real smoke-test run against `evals/photos/001.jpg`, not by the unit tests (they stub the network boundary and never see a real URL).
