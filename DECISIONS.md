@@ -92,3 +92,31 @@
 - **`estimate()` only acts on the top vision candidate.** A non-match or a tap-dish (drink) hit asks a question instead of falling through to candidate #2/#3. Revisit only if step 6's evals show this costs accuracy.
 - **`load_dotenv()` lives in `src/vision.py` only** — the first (and so far only) `.env` consumer in the repo.
 - **Gemini's API key goes in an `x-goog-api-key` header, not a `?key=` query param.** `httpx2` logs the full request URL at INFO; a query param would put the key in stderr on every call. Caught by a real smoke-test run against `evals/photos/001.jpg`, not by the unit tests (they stub the network boundary and never see a real URL).
+
+## Eval (step 6)
+- **Refusals count as a kcal miss, not an exclusion.** All three accuracy
+  metrics (dish correct, kcal ±20%, refusal rate) share one denominator —
+  the full labelled set — so a backend can't inflate its kcal accuracy by
+  refusing on the hard photos. Decided before running either backend.
+- **results.md is hand-rolled markdown, not `DataFrame.to_markdown()`.**
+  `tabulate` isn't installed; not worth adding a dependency for one table.
+- **Results: Gemini 13.0% dish-correct / 39.1% kcal ±20%, Ollama 0.0% /
+  21.7%** (23 eval photos, both $0/photo, 0% refusals). Gemini is both
+  faster (1.73s vs 16.71s median) and more accurate.
+- **Low accuracy traces to the eval photos, not the pipeline.** Several of
+  the 23 photos are dishes the database has no entry for at all — the
+  model still names *something*, `search()` still fuzzy-matches it to the
+  closest dish it has, and that dish's kcal sometimes lands within ±20%
+  by coincidence while the dish name is wrong. Zero refusals across 46
+  calls (both backends) despite this confirms `estimate()` never says "I
+  don't know this dish" — it always picks a nearest match instead of a
+  question, because the confidence gate (0.6) is about the vision model's
+  certainty in what it saw, not about whether that dish exists in the
+  1,163-row set.
+- **Limitation: the HPB/Kaggle set under-covers real SG hawker food.**
+  1,163 rows is a sample, not the full space of dishes a camera will see
+  at a hawker centre — stalls run regional/fusion variants, plating
+  differs, and some common dishes are simply missing. A bigger or
+  user-extensible database would raise dish-correct further than any
+  vision-side change could. Not fixed in this step; flagged for whoever
+  picks up data coverage next.
