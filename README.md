@@ -83,6 +83,8 @@ and reporting 240 kcal for a 400ml cup of Iced Kopi](docs/images/claude-kopi.png
 - **A Streamlit logging app** (`app.py`): upload a photo to estimate a meal,
   tap a favourite drink, see today's running total. Logging is session-only:
   it isn't saved to a database, so it disappears once the session ends.
+
+![TODO: screenshot of the Streamlit app — photo upload, drinks tap list, and today's log](docs/images/app-ui.png)
 - **An eval harness** (`evals/run.py`) that scores each vision backend
   against a 23-photo labelled set — see [Results](#results) below.
 
