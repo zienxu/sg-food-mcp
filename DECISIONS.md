@@ -120,3 +120,9 @@
   user-extensible database would raise dish-correct further than any
   vision-side change could. Not fixed in this step; flagged for whoever
   picks up data coverage next.
+
+## App (step 7)
+- **Tap list shows only the 6 `is_favourite` rows, not all 189 `input_mode=tap`
+  rows.** The full tap set (every kopi/teh variant) stays reachable through
+  search_dishes via the MCP tools; `is_favourite` is a hand-curated shortlist
+  for a one-screen tap UI, not the complete drinks menu.
