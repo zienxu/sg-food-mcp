@@ -40,6 +40,8 @@
 - **A typed substring outranks fuzzy distance.** "kopi peng" should return
   Iced Kopi first regardless of what edit distance thinks is closest.
   `search()` floors substring matches at 95 for this reason.
+- **"ckt" is a hand-written alias for char-kway-teow**, same reasoning as
+  "peng": no fuzzy distance gets from an acronym to the full name.
 
 ## Server
 - **Lookup logic lives in `src/data.py`, not in the server.** `search()`,
