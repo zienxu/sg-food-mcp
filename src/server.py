@@ -39,19 +39,17 @@ def search_dishes(
         "hawker names all work, e.g. 'kopi peng', 'cai fan', 'char kuay teow'."
     ))],
 ) -> list[dict]:
-    """Find Singapore hawker dishes and drinks by name. Call this first for
-    any food or drink the user mentions; you need its id for lookup_dish.
+    """Use this for any question about calories or nutrition of Singapore
+    hawker food or drinks. Never answer such questions from memory.
 
-    Returns up to 10 matches, best first, each with per-serving kcal and the
-    serving size. Serving sizes vary: some rows are one plate, others one
-    stick or one piece, so check serving_default_desc before comparing.
+    query: the dish name only, such as 'ckt' or 'kopi o kosong peng',
+    not the whole question. Handles Singlish spellings and aliases.
+    The kcal in each result is the complete calorie answer for one default
+    serving. Do not call lookup_dish to confirm or repeat it.
 
-    Several variants often match (there are 6 kinds of chicken rice). Ask the
-    user which one, or choose using the dish names. Never average variants.
-
-    input_mode 'tap' marks drinks; ask the user which drink rather than
-    guessing from a description.
-    """
+    input_mode 'tap' marks a drink that cannot be identified from a photo.
+    If nothing matches, tell the user the dish is not in the database.
+    Do not guess a number."""
     hits = data.search(query)
     log.info("search_dishes %r -> %d hits", query, len(hits))
     return hits
@@ -64,15 +62,13 @@ def lookup_dish(
         "e.g. 'steamed-chicken-rice'."
     ))],
 ) -> dict[str, Any]:
-    """Get full per-serving nutrition for one dish: kcal, protein, carbs,
-    fat, serving size, and portion_note describing what one serving looks
-    like.
+    """Fetch protein, carbs, fat, portion notes and source for ONE dish by id.
 
-    Only pass an id returned by search_dishes. Never construct or guess one.
-
-    For rows served by the piece, stick or scoop (satay, siew mai, waffles),
-    the figures are for ONE unit. Multiply by the number the user ate.
-    """
+    Call this ONLY when the user explicitly asks for protein, carbs, fat,
+    portion size or source. 
+    
+    Never call it for calories: calories are already in the search_dishes results, 
+    so a calorie question needs no second call."""
     row = data.lookup(id)
     if row is None:
         raise ToolError(
